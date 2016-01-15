@@ -1,0 +1,4 @@
+.output
+/bin/*.dump
+/bin/eagle.S
+*.co

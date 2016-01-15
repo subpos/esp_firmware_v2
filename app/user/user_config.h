@@ -1,0 +1,1 @@
+#define BEACON_INTERVAL_MS 100
