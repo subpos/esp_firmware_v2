@@ -16,5 +16,5 @@ AT+CWSAPCH:
 Change beacon channel.
 AT+CWSAPCH=<channel num> 
 
-This method of generation allows for tigher control of beacon frame rates and 
+This method of generation allows for tighter control of beacon frame rates and 
 increases security.
