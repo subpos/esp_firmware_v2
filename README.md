@@ -1,6 +1,6 @@
 # esp_firmware_v2
 
-Custom ESP8266 Firmware for SubPos Nodes Based on ESP8266_NONOS_SDK_V1.4.0_15_09_18
+Custom ESP8266 Firmware for SubPos Nodes Based on esp_iot_sdk_v1.3.0_15_08_08
 
 http://bbs.espressif.com/viewtopic.php?p=3756#p3756
 
