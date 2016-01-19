@@ -8,15 +8,15 @@ commands, except they utilise the beacon generator instead.
 
 AT+CWSAPID:
 Set parameters of beacon generator
-AT+CWSAPID="<ssid>",<channel num>
+AT+CWSAPID="[ssid]",[channel num]
 
 AT+CWSAPCH: 
 Change beacon channel.
-AT+CWSAPCH=<channel num> 
+AT+CWSAPCH=[channel num] 
 
 AT+CWSAPBR: 
 Change beacon rate. Must be less than or equal to 1 second (1000ms).
-AT+CWSAPCH=<delay ms> 
+AT+CWSAPBR=[delay ms]
 
 This method of generation allows for tighter control of beacon frame rates and 
 increases security.
