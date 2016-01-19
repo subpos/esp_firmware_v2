@@ -14,5 +14,9 @@ AT+CWSAPCH:
 Change beacon channel.
 AT+CWSAPCH=<channel num> 
 
+AT+CWSAPBR: 
+Change beacon rate. Must be less than or equal to 1 second (1000ms).
+AT+CWSAPCH=<delay ms> 
+
 This method of generation allows for tighter control of beacon frame rates and 
 increases security.

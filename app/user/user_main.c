@@ -3,7 +3,6 @@
 #include "gpio.h"
 #include "os_type.h"
 #include "mem.h"
-#include "user_config.h"
 #include "user_interface.h"
 #include "at_custom.h"
 
@@ -12,6 +11,7 @@
 os_event_t    user_procTaskQueue[user_procTaskQueueLen];
 static volatile os_timer_t beacon_timer;
 uint8_t channel = 1;
+uint32_t beacon_rate = 100; //Default 100ms
 
 #define packetSize    82
 
@@ -125,7 +125,7 @@ void ICACHE_FLASH_ATTR
 at_setupCmdCwsapID(uint8_t id, char *pPara)
 {
     int8_t len;
-
+    uint8_t channel_tmp;
     pPara++; //Skip = char
     len = at_dataStrCpy(packet_buffer, pPara, 32, 38);
     
@@ -136,13 +136,14 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
     }
     pPara += (len+3);
 
-    channel = atoi(pPara);
-    if(channel<1 || channel>13)
+    channel_tmp = atoi(pPara);
+    if(channel_tmp<1 || channel_tmp>13)
     {
         at_response_error();
         return;
     }
     ETS_UART_INTR_DISABLE();
+    channel = channel_tmp;
     wifi_set_channel(channel);
     ETS_UART_INTR_ENABLE();
     at_response_ok();
@@ -152,16 +153,39 @@ void ICACHE_FLASH_ATTR
 at_setupCmdCwsapCH(uint8_t id, char *pPara)
 {
     int8_t len;
-   
+    uint8_t channel_tmp;
     pPara++;
-    channel = atoi(pPara);
-    if(channel<1 || channel>13)
+    channel_tmp = atoi(pPara);
+    if(channel_tmp<1 || channel_tmp>13)
     {
         at_response_error();
         return;
     }
     ETS_UART_INTR_DISABLE();
+    channel = channel_tmp;
     wifi_set_channel(channel);
+    ETS_UART_INTR_ENABLE();
+    at_response_ok();
+}
+
+void ICACHE_FLASH_ATTR
+at_setupCmdCwsapBR(uint8_t id, char *pPara)
+{
+    int8_t len;
+    uint32_t beacon_rate_tmp;
+    pPara++;
+    beacon_rate_tmp = atol(pPara);
+    if(beacon_rate_tmp<1 || beacon_rate_tmp>1000)
+    {
+        at_response_error();
+        return;
+    }
+    ETS_UART_INTR_DISABLE();
+    beacon_rate = beacon_rate_tmp;
+    // Set timer for beacon
+    os_timer_disarm(&beacon_timer);
+    os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
+    os_timer_arm(&beacon_timer, beacon_rate, 1);
     ETS_UART_INTR_ENABLE();
     at_response_ok();
 }
@@ -176,9 +200,14 @@ at_setupCmdCwsapCH(uint8_t id, char *pPara)
 //Change beacon channel.
 //AT+CWSAPCH=<channel num> 
 
+//AT+CWSAPBR: 
+//Change beacon rate.
+//AT+CWSAPCH=<delay ms> 
+
 
 extern void at_exeCmdCiupdate(uint8_t id);
 at_funcationType at_custom_cmd[] = {
+        {"+CWSAPBR", 8, NULL, NULL, at_setupCmdCwsapBR, NULL},
         {"+CWSAPID", 8, NULL, NULL, at_setupCmdCwsapID, NULL},
         {"+CWSAPCH", 8, NULL, NULL, at_setupCmdCwsapCH, NULL}
 };
@@ -204,7 +233,7 @@ user_init()
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
     os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
-    os_timer_arm(&beacon_timer, BEACON_INTERVAL_MS, 1);
+    os_timer_arm(&beacon_timer, beacon_rate, 1);
     
     wifi_set_channel(channel);
     wifi_promiscuous_enable(1);

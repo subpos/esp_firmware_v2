@@ -1,7 +1,7 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
-#define AT_CUSTOM_UPGRADE
+//#define AT_CUSTOM_UPGRADE
 
 #ifdef AT_CUSTOM_UPGRADE
     #ifndef AT_UPGRADE_SUPPORT
