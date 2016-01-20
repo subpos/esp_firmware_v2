@@ -1,0 +1,4 @@
+tools/* linguist-documentation
+lib/* linguist-vendored
+bin/* linguist-vendored
+app/build/* linguist-vendored
