@@ -16,6 +16,8 @@ uint32_t beacon_rate = 100; //Default 100ms
 #define packetSize    82
 
 // Beacon Packet buffer
+//http://mrncciew.com/2014/10/08/802-11-mgmt-beacon-frame/
+                                      /* Beacon Frame Type */
 uint8_t packet_buffer[packetSize] = { 0x80, 0x00, 0x00, 0x00, 
                 /* DST MAC (Broadcast)*/
                 /*4*/   0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -25,28 +27,49 @@ uint8_t packet_buffer[packetSize] = { 0x80, 0x00, 0x00, 0x00,
                 /*16*/  0x01, 0x02, 0x03, 0x04, 0x05, 0x06,  
                 /* Counter */
                 /*22*/  0xc0, 0x6c,
-                /*24*/  0x83, 0x51, 0xf7, 0x8f, 0x0f, 0x00, 0x00, 0x00, 
+                /* Timestamp */
+                /*24*/  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                /* Beacon Interval */
                 /*32*/  0x64, 0x00, 
-                /*34*/  0x01, 0x04, 
-                /* SSID Part */
+                /* Capability Info; set WEP so open networks don't accidentally get 
+                stored in client Wi-Fi list when clicked (open networks allow one 
+                click adding, WEP asks for password first). */ 
+                /*34*/  0x11, 0x04, 
+                /* SSID Element ID and Length of SSID */
                 /*36*/  0x00, 0x1f, 
-                /* SSID Chars Start */
+                /* SSID Octets */
                 /*38*/  0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
                 /*44*/  0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
                 /*50*/  0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
                 /*56*/  0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
                 /*62*/  0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 
-                        0x01,
-                /* End Beacon */
+                /*68*/  0x01,
+                /* Config */
                 /*69*/  0x01, 0x08, 0x82, 0x84,
                 /*73*/  0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c, 0x03, 0x01, 
-                /*81*/  0x04};     
+                /* Channel Num */
+                /*81*/  0x01};     
 
  
 /* Sends beacon packets. */
 void beacon(void *arg)
 {
-    wifi_send_pkt_freedom(packet_buffer, packetSize, 0);
+    int i = wifi_send_pkt_freedom(packet_buffer, packetSize, 0);
+    uint32_t timestamp = (uint32_t)packet_buffer[27] << 24 | (uint32_t)packet_buffer[26] << 16 |(uint32_t)packet_buffer[25] << 8 | packet_buffer[24];
+    timestamp = timestamp + (beacon_rate * 1000);
+    packet_buffer[24] = (unsigned char)(timestamp & 0xff);
+    packet_buffer[25] = (unsigned char)(timestamp >> 8 & 0xff);
+    packet_buffer[26] = (unsigned char)(timestamp >> 16 & 0xff);
+    packet_buffer[27] = (unsigned char)(timestamp >> 24 & 0xff);
+    /*if (i < 0)
+    {
+        at_port_print("\r\nError sending beacon frame.\r\n");
+        at_response_error();
+        
+    } else {
+        at_port_print(".");
+
+    }*/
 }
 
 extern at_funcationType at_custom_cmd[];
@@ -92,7 +115,7 @@ void print_hex(unsigned char *hex, unsigned int len) {
   for (i=0;i<len;i++) {
     os_sprintf(buffer, "0x%02x ", hex[i]);
     at_port_print(buffer);
-    if (i%8==0)
+    if (i%8==0 && i!=0)
       at_port_print("\r\n");
   }
   at_port_print("\r\n");
@@ -123,7 +146,7 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
     }
     pPara++; //Skip "
     j=0;
-    for(i=38; i<=63; i++)
+    for(i=38; i<=68; i++)
     {
         if(pPara[j] == '\"')
         { 
@@ -147,15 +170,17 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
     }
     ETS_UART_INTR_DISABLE();
     channel = channel_tmp;
+    packet_buffer[81] = (unsigned char)channel;
     wifi_set_channel(channel);
-    i = wifi_send_pkt_freedom(packet_buffer, packetSize, 0);
+    
+    //i = wifi_send_pkt_freedom(packet_buffer, packetSize, 0);
     ETS_UART_INTR_ENABLE();
-    if (i < 0)
+    /*if (i < 0)
     {
         at_port_print("\r\nError sending beacon frame.\r\n");
         at_response_error();
         return;
-    }
+    }*/
     
     print_hex(packet_buffer,packetSize);
     at_response_ok();
@@ -182,6 +207,7 @@ at_setupCmdCwsapCH(uint8_t id, char *pPara)
     }
     ETS_UART_INTR_DISABLE();
     channel = channel_tmp;
+    packet_buffer[81] = (unsigned char)channel;
     wifi_set_channel(channel);
     ETS_UART_INTR_ENABLE();
     at_response_ok();
@@ -241,7 +267,7 @@ void ICACHE_FLASH_ATTR
 user_init()
 {
     //uart_init(115200, 115200);
-    
+    uint8_t macaddr[6];	
     char buf[64] = {0};
     at_customLinkMax = 5;
     at_init();
@@ -251,6 +277,15 @@ user_init()
     at_cmd_array_regist(&at_custom_cmd[0], sizeof(at_custom_cmd)/sizeof(at_custom_cmd[0]));
 
     //os_printf("\n\nSDK version:%s\n", system_get_sdk_version());
+    
+    //Set MAC address to stored address. 01:02:03:04:05:06 seems to be blocked on devices.
+    wifi_get_macaddr(0x00, macaddr);
+    packet_buffer[16] = packet_buffer[10] = macaddr[0];
+    packet_buffer[17] = packet_buffer[11] = macaddr[1];
+    packet_buffer[18] = packet_buffer[12] = macaddr[2];
+    packet_buffer[19] = packet_buffer[13] = macaddr[3];
+    packet_buffer[20] = packet_buffer[14] = macaddr[4];
+    packet_buffer[21] = packet_buffer[15] = macaddr[5];
     
     //Promiscuous works only with station mode
     //Should set this manually to save flash.
