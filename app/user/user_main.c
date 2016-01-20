@@ -241,6 +241,32 @@ at_setupCmdCwsapBR(uint8_t id, char *pPara)
     at_response_ok();
 }
 
+void ICACHE_FLASH_ATTR
+at_setupCmdCwsapEN(uint8_t id)
+{
+    
+    if(at_wifiMode != STATION_MODE)
+    {
+        at_response_error();
+        return;
+    }
+    // Set timer for beacon
+    os_timer_disarm(&beacon_timer);
+    os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
+    os_timer_arm(&beacon_timer, beacon_rate, 1);
+
+    at_response_ok();
+}
+
+void ICACHE_FLASH_ATTR
+at_setupCmdCwsapDS(uint8_t id)
+{
+    // Set timer for beacon
+    os_timer_disarm(&beacon_timer);
+
+    at_response_ok();
+}
+
 //These commands are the same as the previous rev AT commands, except 
 //they utilise the beacon generator instead.
 //AT+CWSAPID:
@@ -255,11 +281,21 @@ at_setupCmdCwsapBR(uint8_t id, char *pPara)
 //Change beacon rate.
 //AT+CWSAPBR=<delay ms> 
 
+//AT+CWSAPEN: 
+//Enable beacons (disabled by default).
+//AT+CWSAPEN
+
+//AT+CWSAPDS: 
+//Disable beacons.
+//AT+CWSAPDS
+
 
 extern void at_exeCmdCiupdate(uint8_t id);
 at_funcationType at_custom_cmd[] = {
         {"+CWSAPBR", 8, NULL, NULL, at_setupCmdCwsapBR, NULL},
         {"+CWSAPID", 8, NULL, NULL, at_setupCmdCwsapID, NULL},
+        {"+CWSAPDS", 8, NULL, NULL, NULL, at_setupCmdCwsapDS},
+        {"+CWSAPEN", 8, NULL, NULL, NULL, at_setupCmdCwsapEN},
         {"+CWSAPCH", 8, NULL, NULL, at_setupCmdCwsapCH, NULL}
 };
 
@@ -295,10 +331,12 @@ user_init()
     wifi_set_channel(channel);
     wifi_promiscuous_enable(1);
     
+    
+    // Disabled by default
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
-    os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
-    os_timer_arm(&beacon_timer, beacon_rate, 1);
+    //os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
+    //os_timer_arm(&beacon_timer, beacon_rate, 1);
     
 
 }
