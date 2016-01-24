@@ -339,6 +339,16 @@ user_init()
     
     //Set MAC address to stored address. 01:02:03:04:05:06 seems to be blocked on devices.
     wifi_get_macaddr(0x00, macaddr);
+    //If no MAC set, set a default. TODO: allow change of MAC address.
+    if (macaddr[0] == 0xff && macaddr[1] == 0xff && macaddr[2] == 0xff)
+    {
+        macaddr[0] = 0x00;
+        macaddr[1] = 0x00;
+        macaddr[2] = 0x00;
+        macaddr[3] = 0x00;
+        macaddr[4] = 0xff;
+        macaddr[5] = 0xff;
+    }
     packet_buffer[16] = packet_buffer[10] = macaddr[0];
     packet_buffer[17] = packet_buffer[11] = macaddr[1];
     packet_buffer[18] = packet_buffer[12] = macaddr[2];
