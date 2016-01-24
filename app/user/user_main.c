@@ -126,7 +126,9 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
 {
     if(at_wifiMode != STATION_MODE)
     {
+    #ifdef DEBUG
         at_port_print("\r\nNot in station mode.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -140,7 +142,9 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
     //programmed like this
     if(len < 8)
     {
+    #ifdef DEBUG
         at_port_print("\r\nSSID too short.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -164,7 +168,9 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
     channel_tmp = atoi(pPara);
     if(channel_tmp<1 || channel_tmp>13)
     {
+    #ifdef DEBUG
         at_port_print("\r\nInvalid channel.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -181,8 +187,9 @@ at_setupCmdCwsapID(uint8_t id, char *pPara)
         at_response_error();
         return;
     }*/
-    
+    #ifdef DEBUG
     print_hex(packet_buffer,packetSize);
+    #endif
     at_response_ok();
 }
 
@@ -191,7 +198,9 @@ at_setupCmdCwsapCH(uint8_t id, char *pPara)
 {
     if(at_wifiMode != STATION_MODE)
     {
+    #ifdef DEBUG
         at_port_print("\r\nNot in station mode.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -201,7 +210,9 @@ at_setupCmdCwsapCH(uint8_t id, char *pPara)
     channel_tmp = atoi(pPara);
     if(channel_tmp<1 || channel_tmp>13)
     {
+    #ifdef DEBUG
         at_port_print("\r\nInvalid channel.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -227,7 +238,9 @@ at_setupCmdCwsapBR(uint8_t id, char *pPara)
     beacon_rate_tmp = atol(pPara);
     if(beacon_rate_tmp<1 || beacon_rate_tmp>1000)
     {
+    #ifdef DEBUG
         at_port_print("\r\nInvalid beacon rate.\r\n");
+    #endif
         at_response_error();
         return;
     }
@@ -308,6 +321,16 @@ user_init()
     at_customLinkMax = 5;
     at_init();
     at_set_custom_info(buf);
+    
+    if(at_wifiMode != STATION_MODE)
+    {
+    #ifdef DEBUG
+        at_port_print("\r\nStation mode not set, setting station mode.\r\n");
+    #endif
+        ETS_UART_INTR_DISABLE();
+        wifi_set_opmode(1);
+        ETS_UART_INTR_ENABLE();
+    }
     
     at_port_print("\r\nready\r\n");
     at_cmd_array_regist(&at_custom_cmd[0], sizeof(at_custom_cmd)/sizeof(at_custom_cmd[0]));
