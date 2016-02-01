@@ -201,7 +201,9 @@ CCFLAGS += 			\
 	-mtext-section-literals \
 	-ffunction-sections \
 	-fdata-sections
-#	-Wall			
+#	-Wall		
+
+DEFINES += -DUSE_US_TIMER
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)

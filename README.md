@@ -7,7 +7,7 @@ instead of using the AP mode. These commands are the same as the regular AT
 commands, except they utilise the beacon generator instead.
 
 AT+CWSAPID:
-Set parameters of beacon generator
+Set parameters of beacon generator. SSID must be 8 -> 31 chars.
 AT+CWSAPID="[ssid]",[channel num]
 
 AT+CWSAPCH: 
@@ -15,8 +15,8 @@ Change beacon channel.
 AT+CWSAPCH=[channel num] 
 
 AT+CWSAPBR: 
-Change beacon rate. Must be less than or equal to 1 second (1000ms).
-AT+CWSAPBR=[delay ms]
+Change beacon rate. Number of time units (1TU = 1024ms)
+AT+CWSAPBR=[delay time units]
 
 AT+CWSAPEN: 
 Enable beacons (disabled by default).

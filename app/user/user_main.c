@@ -11,7 +11,8 @@
 os_event_t    user_procTaskQueue[user_procTaskQueueLen];
 static volatile os_timer_t beacon_timer;
 uint8_t channel = 1;
-uint32_t beacon_rate = 100; //Default 100ms
+uint32_t beacon_rate = 100; //Default 100TU
+uint32_t time_unit = 1024; //microseconds
 
 #define packetSize    82
 
@@ -246,10 +247,15 @@ at_setupCmdCwsapBR(uint8_t id, char *pPara)
     }
     ETS_UART_INTR_DISABLE();
     beacon_rate = beacon_rate_tmp;
+    
+    // Update beacon interval in packet
+    packet_buffer[32] = (unsigned char)(beacon_rate & 0xff);
+    packet_buffer[33] = (unsigned char)(beacon_rate >> 8 & 0xff);
+    
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
     os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
-    os_timer_arm(&beacon_timer, beacon_rate, 1);
+    os_timer_arm_us(&beacon_timer, beacon_rate * time_unit, 1);
     ETS_UART_INTR_ENABLE();
     at_response_ok();
 }
@@ -266,7 +272,7 @@ at_setupCmdCwsapEN(uint8_t id)
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
     os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
-    os_timer_arm(&beacon_timer, beacon_rate, 1);
+    os_timer_arm_us(&beacon_timer, beacon_rate * time_unit, 1);
 
     at_response_ok();
 }
@@ -291,8 +297,8 @@ at_setupCmdCwsapDS(uint8_t id)
 //AT+CWSAPCH=<channel num> 
 
 //AT+CWSAPBR: 
-//Change beacon rate.
-//AT+CWSAPBR=<delay ms> 
+//Change beacon rate. Number of time units (1TU = 1024ms)
+//AT+CWSAPBR=<delay time units> 
 
 //AT+CWSAPEN: 
 //Enable beacons (disabled by default).
@@ -315,6 +321,11 @@ at_funcationType at_custom_cmd[] = {
 void ICACHE_FLASH_ATTR
 user_init()
 {
+    //TODO: allow change of MAC address
+    //TODO: hw_timer_init to trigger beacon from external source
+    
+    system_timer_reinit(); // Required for us timer (os_timer_arm_us)
+    
     //uart_init(115200, 115200);
     uint8_t macaddr[6];	
     char buf[64] = {0};
@@ -322,14 +333,41 @@ user_init()
     at_init();
     at_set_custom_info(buf);
     
+    //Promiscuous works only with station mode
+    //Code will error if not in station mode.
+    //AT+CWMODE=1
+    //AT+CWAUTOCONN=0
+    
     if(at_wifiMode != STATION_MODE)
     {
     #ifdef DEBUG
         at_port_print("\r\nStation mode not set, setting station mode.\r\n");
     #endif
+
         ETS_UART_INTR_DISABLE();
         wifi_set_opmode(1);
         ETS_UART_INTR_ENABLE();
+    }
+
+    
+    //Clear client config (without writing to flash).
+    //Being associated to an AP causes issues with generating beacons.
+    //This also disables any UART activity about client connection
+    //as this activity disrupts the SubPos Node UART interface.
+    //A reboot is required once set.
+
+    struct station_config stationConf; 
+
+    
+    wifi_station_get_config_default (&stationConf);
+    if (os_strlen(stationConf.ssid) > 0) {
+        char ssid[32] = ""; 
+        char password[64] = ""; 
+        stationConf.bssid_set = 0; //need not check MAC address of AP
+       
+        os_memcpy(&stationConf.ssid, ssid, 32); 
+        os_memcpy(&stationConf.password, password, 64); 
+        wifi_station_set_config(&stationConf); 
     }
     
     at_port_print("\r\nready\r\n");
@@ -339,7 +377,8 @@ user_init()
     
     //Set MAC address to stored address. 01:02:03:04:05:06 seems to be blocked on devices.
     wifi_get_macaddr(0x00, macaddr);
-    //If no MAC set, set a default. TODO: allow change of MAC address.
+    //If no MAC set, set a default. 
+
     if (macaddr[0] == 0xff && macaddr[1] == 0xff && macaddr[2] == 0xff)
     {
         macaddr[0] = 0x00;
@@ -356,11 +395,7 @@ user_init()
     packet_buffer[20] = packet_buffer[14] = macaddr[4];
     packet_buffer[21] = packet_buffer[15] = macaddr[5];
     
-    //Promiscuous works only with station mode
-    //Should set this manually to save flash.
-    //Code will error if not in station mode.
-    //wifi_set_opmode(STATION_MODE);
-    //AT+CWMODE=1
+    
     wifi_set_channel(channel);
     wifi_promiscuous_enable(1);
     
@@ -368,8 +403,5 @@ user_init()
     // Disabled by default
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
-    //os_timer_setfn(&beacon_timer, (os_timer_func_t *) beacon, NULL);
-    //os_timer_arm(&beacon_timer, beacon_rate, 1);
-    
 
 }
