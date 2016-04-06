@@ -334,7 +334,7 @@ user_init()
     at_set_custom_info(buf);
     
     //Promiscuous works only with station mode
-    //Code will error if not in station mode.
+    //wifi_send_pkt_freedom will error if not in station mode.
     //AT+CWMODE=1
     //AT+CWAUTOCONN=0
     
