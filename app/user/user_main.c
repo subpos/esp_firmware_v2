@@ -402,7 +402,7 @@ user_init()
     wifi_promiscuous_enable(1);
     
     
-    // Disabled by default
+    // Beacons disabled by default
     // Set timer for beacon
     os_timer_disarm(&beacon_timer);
 
