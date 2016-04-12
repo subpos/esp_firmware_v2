@@ -8,7 +8,7 @@ commands, except they utilise the beacon generator instead.
 
 Note that these command doesn't remain persistant on reboots of the ESP module 
 to reduce flash rewrites when using with the SubPos Node. With this firmware, 
-you must update the configuration on each ESP reboot.
+you must update the ESP configuration on each reboot.
 
 AT+CWSAPID:
 Set parameters of beacon generator. SSID must be 8 -> 31 chars.
