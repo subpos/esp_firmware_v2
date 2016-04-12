@@ -288,6 +288,8 @@ at_setupCmdCwsapDS(uint8_t id)
 
 //These commands are the same as the previous rev AT commands, except 
 //they utilise the beacon generator instead.
+//Note that these command doesn't remain persistant on reboots of the ESP module
+//to reduce flash rewrites when using with the SubPos Node.
 //AT+CWSAPID:
 //Set parameters of beacon generator
 //AT+CWSAPID="<ssid>",<channel num>
