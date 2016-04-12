@@ -6,6 +6,10 @@ This release uses the wifi_send_pkt_freedom() function to generate beacon frames
 instead of using the AP mode. These commands are the same as the regular AT 
 commands, except they utilise the beacon generator instead.
 
+Note that these command doesn't remain persistant on reboots of the ESP module 
+to reduce flash rewrites when using with the SubPos Node. With this firmware, 
+you must update the configuration on each ESP reboot.
+
 AT+CWSAPID:
 Set parameters of beacon generator. SSID must be 8 -> 31 chars.
 AT+CWSAPID="[ssid]",[channel num]
